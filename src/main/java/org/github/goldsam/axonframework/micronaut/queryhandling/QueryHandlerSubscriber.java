@@ -39,8 +39,7 @@ public class QueryHandlerSubscriber {
     public void setQueryBus(QueryBus queryBus) {
         this.queryBus = queryBus;
     }
-    
-    
+        
     public void setQueryHandlers(Collection<QueryHandlerAdapter> queryHandlers) {
         this.queryHandlers = queryHandlers;
     }

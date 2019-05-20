@@ -1,11 +1,10 @@
-package org.github.goldsam.axonframework.micronaut.queryhandling;
+package org.github.goldsam.axonframework.micronaut.queryhandling.annotation.internal;
 
 import io.micronaut.aop.MethodInterceptor;
 import io.micronaut.aop.MethodInvocationContext;
-import java.io.Closeable;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Singleton;
+import java.util.concurrent.ConcurrentMap;
+import org.axonframework.common.Registration;
 import org.axonframework.messaging.annotation.ClasspathHandlerDefinition;
 import org.axonframework.messaging.annotation.ClasspathParameterResolverFactory;
 import org.axonframework.messaging.annotation.HandlerDefinition;
@@ -17,35 +16,28 @@ import org.axonframework.queryhandling.annotation.AnnotationQueryHandlerAdapter;
 /**
  *
  */
-@Singleton
-public class QueryHandlerAdapterInterceptor implements MethodInterceptor<Object, Object>  {
+public class QueryHandlingAdapterIntoduction implements MethodInterceptor<Object, Object>{
     
-    private final Map<Object, AnnotationQueryHandlerAdapter<?>> adapters = new ConcurrentHashMap<>();
-    
+    private final ConcurrentMap<Object, QueryHandlerAdapter> queryHandlerAdapters = new ConcurrentHashMap<>();
+
     @Override
     public Object intercept(MethodInvocationContext<Object, Object> context) {
         Class<?> declaringType = context.getDeclaringType();
-        final Object target = context.getTarget();
-            
-        
         if (QueryHandlerAdapter.class == declaringType) {
-            AnnotationQueryHandlerAdapter<?> adapter = resolveAdapter(target);
+            QueryHandlerAdapter adapter = resolveQueryHandlerAdapter(context.getTarget());
             QueryBus queryBus = (QueryBus)context.getParameterValues()[0];
             return adapter.subscribe(queryBus); 
-        } else if (Closeable.class == declaringType || AutoCloseable.class == declaringType) {
-            adapters.remove(target);
-            return null;
+        } else {
+            return context.proceed();
         }
-        
-        return context.proceed();
    }
     
-    private AnnotationQueryHandlerAdapter<?> resolveAdapter(Object target) {
-        return adapters.computeIfAbsent(target, t -> {
+    private QueryHandlerAdapter resolveQueryHandlerAdapter(Object target) {
+        return queryHandlerAdapters.computeIfAbsent(target, t -> {
             Class<?> targetClass = target.getClass();
             ParameterResolverFactory parameterResolverFactory = ClasspathParameterResolverFactory.forClass(targetClass);
             HandlerDefinition handlerDefinition = ClasspathHandlerDefinition.forClass(targetClass);
             return new AnnotationQueryHandlerAdapter<>(t, parameterResolverFactory, handlerDefinition);
         });
-    }
+    } 
 }

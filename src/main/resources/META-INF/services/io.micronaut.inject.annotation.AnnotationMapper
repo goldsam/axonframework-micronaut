@@ -1,1 +1,2 @@
-org.github.goldsam.axonframework.micronaut.messaging.annotation.internal.MessageHandlingIntrospectedAnnotationMapper
+org.github.goldsam.axonframework.micronaut.queryhandling.annotation.internal.QueryHandlingIntrospectedAnnotationMapper 
+

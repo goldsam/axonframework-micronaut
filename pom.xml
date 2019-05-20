@@ -66,6 +66,13 @@
             <version>${micronaut.version}</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-inject-java-test</artifactId>
+            <version>${micronaut.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     
         <!-- Axon Framework Depdendencies -->
         <dependency>
