@@ -1,1 +1,1 @@
-org.github.goldsam.axonframework.guice.messaging.annotation.GuiceParameterResolverFactory
+org.github.goldsam.micronaut.axonframework.messaging.annotation.MicronautParameterResolverFactory
