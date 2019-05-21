@@ -7,7 +7,6 @@ import org.axonframework.queryhandling.QueryHandlerAdapter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import org.github.goldsam.axonframework.micronaut.queryhandling.annotation.internal.QueryHandlingAdapterIntoduction;
 
 /**
  * Introduces an implementation of the {@link QueryHandlerAdapter} interface

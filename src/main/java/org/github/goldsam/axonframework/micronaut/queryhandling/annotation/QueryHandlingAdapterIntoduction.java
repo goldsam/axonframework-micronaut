@@ -1,4 +1,4 @@
-package org.github.goldsam.axonframework.micronaut.queryhandling.annotation.internal;
+package org.github.goldsam.axonframework.micronaut.queryhandling.annotation;
 
 import io.micronaut.aop.MethodInterceptor;
 import io.micronaut.aop.MethodInvocationContext;
