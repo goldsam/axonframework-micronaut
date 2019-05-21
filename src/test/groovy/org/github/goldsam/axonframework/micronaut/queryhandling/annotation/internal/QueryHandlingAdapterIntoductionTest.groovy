@@ -1,4 +1,4 @@
-package org.github.goldsam.axonframework.micronaut.intercept;
+package org.github.goldsam.axonframework.micronaut.queryhandling.annotation.internal;
 
 import io.micronaut.annotation.processing.test.AbstractTypeElementSpec;
 import io.micronaut.aop.MethodInvocationContext;
@@ -20,7 +20,7 @@ import static org.junit.Assert.*
 /**
  *
  */
-public class QueryHandlerAdapterInterceptorTest extends AbstractTypeElementSpec {
+public class QueryHandlingAdapterIntoduction extends AbstractTypeElementSpec {
 
 //@QueryHandling - Ideally, this woudld indicate that class `Thing` should implement interface `QueryHandlerAdapter`
 
@@ -30,13 +30,12 @@ public class QueryHandlerAdapterInterceptorTest extends AbstractTypeElementSpec 
 package test;
 
 import javax.inject.Singleton;
-import io.micronaut.aop.Introduction;
 import org.axonframework.queryhandling.QueryHandler;
 import org.github.goldsam.axonframework.micronaut.queryhandling.annotation.QueryHandling;
 import org.axonframework.queryhandling.QueryHandlerAdapter;
 
 @Singleton
-@Introduction(interfaces = QueryHandlerAdapter.class)
+@QueryHandling
 class Thing {
     
     @QueryHandler

@@ -71,9 +71,14 @@
             <artifactId>micronaut-inject-java-test</artifactId>
             <version>${micronaut.version}</version>
             <scope>test</scope>
+<!--            <exclusions>
+                <exclusion>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                </exclusion>
+            </exclusions>-->
         </dependency>
-
-    
+        
         <!-- Axon Framework Depdendencies -->
         <dependency>
             <groupId>org.axonframework</groupId>
@@ -131,19 +136,19 @@
             <version>2.23.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
+<!--        <dependency>
             <groupId>com.athaydes</groupId>
             <artifactId>spock-reports</artifactId>
             <version>1.6.1</version>
             <scope>test</scope>
-            <!-- this avoids affecting your version of Groovy/Spock -->
-            <!--      <exclusions>
+             this avoids affecting your version of Groovy/Spock 
+                  <exclusions>
               <exclusion>
                 <groupId>*</groupId>
                 <artifactId>*</artifactId>
               </exclusion>
-            </exclusions>-->
-        </dependency>
+            </exclusions>
+        </dependency>-->
         
         <dependency>
             <groupId>ch.qos.logback</groupId>
