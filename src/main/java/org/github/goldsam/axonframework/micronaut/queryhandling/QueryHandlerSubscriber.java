@@ -16,18 +16,20 @@
 package org.github.goldsam.axonframework.micronaut.queryhandling;
 
 import io.micronaut.context.BeanLocator;
-import io.micronaut.context.annotation.Factory;
+import io.micronaut.context.annotation.Context;
 import java.util.Collection;
 import javax.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.axonframework.queryhandling.QueryBus;
 import org.axonframework.queryhandling.QueryHandlerAdapter;
 
 /**
- *
+ * Registers beans that implement {@link QueryHandlerAdapter} with the query bus.
  */
-@Factory
+@Context
+@Slf4j
 public class QueryHandlerSubscriber {
-
+    
     private final BeanLocator beanLocator;
     private QueryBus queryBus;
     private Collection<QueryHandlerAdapter> queryHandlers;
@@ -46,6 +48,8 @@ public class QueryHandlerSubscriber {
     
     @PostConstruct
     void initialize() {
+        log.debug("Registering QueryHandlerAdapter beans with the QueryBus.");
+                
         if (queryBus == null) {
             queryBus = beanLocator.getBean(QueryBus.class);
         }

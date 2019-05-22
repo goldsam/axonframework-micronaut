@@ -2,6 +2,7 @@ package org.github.goldsam.axonframework.micronaut.queryhandling.annotation.inte
 
 import io.micronaut.aop.MethodInterceptor;
 import io.micronaut.aop.MethodInvocationContext;
+import io.micronaut.core.annotation.Internal;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.inject.Singleton;
@@ -19,6 +20,7 @@ import org.axonframework.queryhandling.annotation.AnnotationQueryHandlerAdapter;
  * with {@link QueryHandling}.
  */
 @Singleton
+@Internal
 public class QueryHandlingAdapterIntoduction implements MethodInterceptor<Object, Object>{
     
     private final ConcurrentMap<Object, QueryHandlerAdapter> queryHandlerAdapters = new ConcurrentHashMap<>();

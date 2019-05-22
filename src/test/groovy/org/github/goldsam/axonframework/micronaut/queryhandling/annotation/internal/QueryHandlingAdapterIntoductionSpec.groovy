@@ -20,12 +20,10 @@ import static org.junit.Assert.*
 /**
  *
  */
-public class QueryHandlingAdapterIntoduction extends AbstractTypeElementSpec {
+public class QueryHandlingAdapterIntoductionSpec extends AbstractTypeElementSpec {
 
-//@QueryHandling - Ideally, this woudld indicate that class `Thing` should implement interface `QueryHandlerAdapter`
-
-    void "test that ... "() {
-        when:    
+    void "test that @QueryHandling introduces the QueryHandlerAdapter interface to a concrete class. "() {
+        when:
         BeanDefinition beanDefinition = buildBeanDefinition('test.Thing', '''
 package test;
 

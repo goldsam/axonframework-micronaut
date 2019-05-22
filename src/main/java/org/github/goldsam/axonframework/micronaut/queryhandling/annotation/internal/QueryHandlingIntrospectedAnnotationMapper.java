@@ -2,6 +2,7 @@ package org.github.goldsam.axonframework.micronaut.queryhandling.annotation.inte
 
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.AnnotationValueBuilder;
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.Introspected;
 import io.micronaut.inject.annotation.TypedAnnotationMapper;
 import io.micronaut.inject.visitor.VisitorContext;
@@ -10,8 +11,9 @@ import java.util.List;
 import org.github.goldsam.axonframework.micronaut.queryhandling.annotation.QueryHandling;
 
 /**
- *
+ * An annotation mapper that enables introspection on classes annotated with {@link QueryHandling}.
  */
+@Internal
 public class QueryHandlingIntrospectedAnnotationMapper implements TypedAnnotationMapper<QueryHandling> {
 
     @Override
