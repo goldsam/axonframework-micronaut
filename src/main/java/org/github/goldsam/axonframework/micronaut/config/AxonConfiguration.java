@@ -1,5 +1,6 @@
-package org.github.goldsam.axonframework.micronaut;
+package org.github.goldsam.axonframework.micronaut.config;
 
+import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.annotation.Bean;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Primary;
@@ -28,6 +29,8 @@ import org.axonframework.queryhandling.QueryGateway;
 import org.axonframework.queryhandling.QueryUpdateEmitter;
 import org.axonframework.serialization.Serializer;
 import org.axonframework.serialization.upcasting.event.EventUpcasterChain;
+import org.github.goldsam.axonframework.micronaut.config.event.AxonConfigurationStartedEvent;
+import org.github.goldsam.axonframework.micronaut.config.event.AxonConfigurationShutdownEvent;
 
 /**
  *
@@ -38,9 +41,16 @@ public class AxonConfiguration implements Configuration {
     private final Configurer configurer; 
     private Configuration config;
     
+    private ApplicationContext applicationContext;
+    
     @Inject
     public AxonConfiguration(Configurer configurer) {
         this.configurer = configurer;
+    }
+    
+    @Inject
+    public void setApplicationContext(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
     }
     
     @Override
@@ -174,12 +184,14 @@ public class AxonConfiguration implements Configuration {
     @Override
     public void start() {
         config.start();
+        applicationContext.publishEvent(new AxonConfigurationStartedEvent(this));
     }
 
     @PreDestroy
     @Override
     public void shutdown() {
         config.shutdown();
+        applicationContext.publishEvent(new AxonConfigurationShutdownEvent(this));
     }
     
     @PostConstruct
