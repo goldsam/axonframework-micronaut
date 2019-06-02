@@ -1,7 +1,7 @@
-package org.github.goldsam.axonframework.micronaut.queryhandling.annotation.internal;
+package org.github.goldsam.axonframework.micronaut.queryhandling.annotation
 
-import io.micronaut.annotation.processing.test.AbstractTypeElementSpec;
-import io.micronaut.aop.MethodInvocationContext;
+import io.micronaut.annotation.processing.test.AbstractTypeElementSpec
+import io.micronaut.aop.MethodInvocationContext
 import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.BeanDefinition
 import io.micronaut.inject.BeanFactory

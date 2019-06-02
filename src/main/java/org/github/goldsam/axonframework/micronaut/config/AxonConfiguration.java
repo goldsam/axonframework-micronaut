@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.axonframework.commandhandling.CommandBus;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.commandhandling.gateway.DefaultCommandGateway;
@@ -36,6 +37,7 @@ import org.github.goldsam.axonframework.micronaut.config.event.AxonConfiguration
  *
  */
 @Factory
+@Singleton
 public class AxonConfiguration implements Configuration {
     
     private final Configurer configurer; 

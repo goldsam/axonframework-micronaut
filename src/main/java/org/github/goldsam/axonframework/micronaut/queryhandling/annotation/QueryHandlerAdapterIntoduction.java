@@ -1,4 +1,4 @@
-package org.github.goldsam.axonframework.micronaut.queryhandling.annotation.internal;
+package org.github.goldsam.axonframework.micronaut.queryhandling.annotation;
 
 import io.micronaut.aop.MethodInterceptor;
 import io.micronaut.aop.MethodInvocationContext;
@@ -16,12 +16,12 @@ import org.axonframework.queryhandling.annotation.AnnotationQueryHandlerAdapter;
 
 /**
  * {@link MethodInterceptor} which introduces an implementation of the 
- * {@link QueryHandlerAdapter} interface when a concrete class is annotated
+ * {@link QueryHandlerAdapter} interface when a class is annotated
  * with {@link QueryHandling}.
  */
 @Singleton
 @Internal
-public class QueryHandlingAdapterIntoduction implements MethodInterceptor<Object, Object>{
+public class QueryHandlerAdapterIntoduction implements MethodInterceptor<Object, Object>{
     
     private final ConcurrentMap<Object, QueryHandlerAdapter> queryHandlerAdapters = new ConcurrentHashMap<>();
 
