@@ -1,9 +1,11 @@
 package org.github.goldsam.axonframework.micronaut.config;
 
 import io.micronaut.context.ApplicationContext;
+import io.micronaut.context.BeanContext;
 import io.micronaut.context.annotation.Bean;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Primary;
+import io.micronaut.context.annotation.Requires;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.PostConstruct;
@@ -42,8 +44,7 @@ public class AxonConfiguration implements Configuration {
     
     private final Configurer configurer; 
     private Configuration config;
-    
-    private ApplicationContext applicationContext;
+    private BeanContext beanContext;
     
     @Inject
     public AxonConfiguration(Configurer configurer) {
@@ -51,8 +52,8 @@ public class AxonConfiguration implements Configuration {
     }
     
     @Inject
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
+    public void setApplicationContext(BeanContext beanContext) {
+        this.beanContext = beanContext;
     }
     
     @Override
@@ -74,32 +75,7 @@ public class AxonConfiguration implements Configuration {
     public QueryUpdateEmitter queryUpdateEmitter() {
         return config.queryUpdateEmitter();
     }
-
-    @Bean
-    @Primary
-    public QueryBus defaultQueryBus() {
-        return config.queryBus();
-    }
-
-    @Bean
-    @Primary
-    public QueryUpdateEmitter defaultQueryUpdateEmitter() {
-        return config.queryUpdateEmitter();
-    }
-
-    @Bean
-    @Primary
-    public CommandBus defaultCommandBus() {
-        return commandBus();
-    }
-
-    @Bean
-    @Primary
-    public EventBus defaultEventBus() {
-        return eventBus();
-    }
-    
-    
+  
     @Override
     public ResourceInjector resourceInjector() {
         return config.resourceInjector();
@@ -111,19 +87,19 @@ public class AxonConfiguration implements Configuration {
     }
     
     /**
-     * Returns the CommandGateway used to send commands to command handlers.
+     * Returns the default CommandGateway used to send commands to command handlers.
      *
      * @param commandBus the command bus to be used by the gateway
      * @return the CommandGateway used to send commands to command handlers
      */
-    @Bean
-    @Primary
+    @Singleton
+    @Requires(missingBeans = CommandGateway.class)
     public CommandGateway commandGateway(CommandBus commandBus) {
         return DefaultCommandGateway.builder().commandBus(commandBus).build();
     }
 
-    @Bean
-    @Primary
+    @Singleton
+    @Requires(missingBeans = QueryGateway.class)
     public QueryGateway queryGateway(QueryBus queryBus) {
         return DefaultQueryGateway.builder().queryBus(queryBus).build();
     }
@@ -182,18 +158,18 @@ public class AxonConfiguration implements Configuration {
     public void onShutdown(int i, Runnable r) {
         config.onShutdown(i, r);
     }
-    
+        
     @Override
     public void start() {
         config.start();
-        applicationContext.publishEvent(new AxonConfigurationStartedEvent(this));
+        beanContext.publishEvent(new AxonConfigurationStartedEvent(this));
     }
 
     @PreDestroy
     @Override
     public void shutdown() {
         config.shutdown();
-        applicationContext.publishEvent(new AxonConfigurationShutdownEvent(this));
+        beanContext.publishEvent(new AxonConfigurationShutdownEvent(this));
     }
     
     @PostConstruct

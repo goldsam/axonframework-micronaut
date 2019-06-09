@@ -11,33 +11,48 @@ import io.micronaut.core.util.StringUtils;
 import io.micronaut.inject.BeanDefinition;
 import io.micronaut.inject.qualifiers.Qualifiers;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
+import org.axonframework.commandhandling.CommandBus;
+import org.axonframework.commandhandling.SimpleCommandBus;
 import org.axonframework.common.AxonConfigurationException;
+import org.axonframework.common.transaction.NoTransactionManager;
+import org.axonframework.common.transaction.TransactionManager;
 import org.axonframework.config.AggregateConfiguration;
 import org.axonframework.config.AggregateConfigurer;
 import org.axonframework.config.Configurer;
 import org.axonframework.config.DefaultConfigurer;
-import org.axonframework.config.EventProcessingConfiguration;
 import org.axonframework.config.EventProcessingConfigurer;
 import org.axonframework.config.EventProcessingModule;
 import org.axonframework.config.ProcessingGroup;
+import org.axonframework.eventhandling.EventBus;
+import org.axonframework.eventhandling.SimpleEventBus;
+import org.axonframework.eventhandling.tokenstore.TokenStore;
 import org.axonframework.eventsourcing.AggregateFactory;
+import org.axonframework.eventsourcing.eventstore.EmbeddedEventStore;
+import org.axonframework.eventsourcing.eventstore.EventStorageEngine;
+import org.axonframework.eventsourcing.eventstore.EventStore;
+import org.axonframework.messaging.annotation.ParameterResolverFactory;
+import org.axonframework.messaging.interceptors.CorrelationDataInterceptor;
 import org.axonframework.modelling.command.CommandTargetResolver;
 import org.axonframework.modelling.command.Repository;
 import org.axonframework.modelling.saga.ResourceInjector;
 import org.axonframework.modelling.saga.repository.SagaStore;
+import org.axonframework.queryhandling.LoggingQueryInvocationErrorHandler;
+import org.axonframework.queryhandling.QueryBus;
+import org.axonframework.queryhandling.QueryInvocationErrorHandler;
+import org.axonframework.queryhandling.QueryUpdateEmitter;
+import org.axonframework.queryhandling.SimpleQueryBus;
+import org.axonframework.serialization.Serializer;
 import org.github.goldsam.axonframework.micronaut.eventhandling.annotation.EventHandling;
 import org.github.goldsam.axonframework.micronaut.eventsourcing.PrototypeBeanAggregateFactory;
 import org.github.goldsam.axonframework.micronaut.eventsourcing.annotation.Aggregate;
 import org.github.goldsam.axonframework.micronaut.modeling.saga.annotation.Saga;
-import org.github.goldsam.axonframework.micronaut.queryhandling.annotation.QueryHandling;
 
 @Factory
 @Slf4j
@@ -48,38 +63,135 @@ public class AxonAutoConfigurer {
     public AxonAutoConfigurer(BeanContext beanContext) {
         this.beanContext = beanContext;
     }
-//    
-//    @Bean
-//    public <T> AggregateFactory<T> aggregateFactory(Class<T> aggregateType, Ag) { 
-//        
-//    }
-    
     
     @Singleton
+    @Requires(missingBeans = CommandBus.class)
+    public SimpleCommandBus commandBus(TransactionManager txManager, AxonConfiguration axonConfiguration) {
+        SimpleCommandBus commandBus = SimpleCommandBus.builder()
+                .transactionManager(txManager)
+                .messageMonitor(axonConfiguration.messageMonitor(CommandBus.class, "commandBus"))
+                .build();
+        commandBus.registerHandlerInterceptor(
+                new CorrelationDataInterceptor<>(axonConfiguration.correlationDataProviders())
+        );
+        return commandBus;
+    }
+    
+    @Singleton
+    @Requires(missingBeans = {EventStorageEngine.class, EventBus.class})
+    public SimpleEventBus eventBus(AxonConfiguration configuration) {
+        return SimpleEventBus.builder()
+                .messageMonitor(configuration.messageMonitor(EventStore.class, "eventStore"))
+                .build();
+    }
+    
+    @Singleton
+    @Requires(beans = QueryInvocationErrorHandler.class)
+    @Requires(missingBeans = QueryBus.class)
+    public SimpleQueryBus queryBusForQueryInvocationErrorHandler(AxonConfiguration axonConfiguration,
+                                                                 TransactionManager transactionManager,
+                                                                 QueryInvocationErrorHandler eh) {
+        return SimpleQueryBus.builder()
+                .messageMonitor(axonConfiguration.messageMonitor(QueryBus.class, "queryBus"))
+                .transactionManager(transactionManager)
+                .errorHandler(eh)
+                .queryUpdateEmitter(axonConfiguration.getComponent(QueryUpdateEmitter.class))
+                .build();
+    }
+    
+    @Singleton
+    @Requires(missingBeans = {QueryBus.class, QueryInvocationErrorHandler.class})
+    public SimpleQueryBus queryBus(AxonConfiguration axonConfiguration, TransactionManager transactionManager) {
+        return SimpleQueryBus.builder()
+                .messageMonitor(axonConfiguration.messageMonitor(QueryBus.class, "queryBus"))
+                .transactionManager(transactionManager)
+                .errorHandler(axonConfiguration.getComponent(
+                        QueryInvocationErrorHandler.class,
+                        () -> LoggingQueryInvocationErrorHandler.builder().build()
+                ))
+                .queryUpdateEmitter(axonConfiguration.getComponent(QueryUpdateEmitter.class))
+                .build();
+    }
+    
+    @Singleton
+    @Requires(missingBeans = EventProcessingConfigurer.class)
     public EventProcessingConfigurer eventProcessingConfigurer() {
         return new EventProcessingModule();
     }
 
-    @PostConstruct
-    void init() {
-        Configurer configurer = DefaultConfigurer.defaultConfiguration();
-
-    }
-    
     @Singleton
     @Primary
     @Requires(missingBeans = EventProcessingModule.class)
     public EventProcessingModule eventProcessingModule() {
         return new EventProcessingModule();
     }
+    
+    @Singleton
+    @Requires(missingBeans = EventBus.class, beans = EventStorageEngine.class)
+    public EmbeddedEventStore eventStore(EventStorageEngine storageEngine, AxonConfiguration configuration) {
+        return EmbeddedEventStore.builder()
+                .storageEngine(storageEngine)
+                .messageMonitor(configuration.messageMonitor(EventStore.class, "eventStore"))
+                .build();
+    }
 
+    @Singleton
+    @Requires(missingBeans = ParameterResolverFactory.class)
+    public ParameterResolverFactory defaultParameterResolverFactory() {
+        return new BeanParameterResolverFactory(beanContext);
+    }
+    
+    @Singleton
+    @Requires(missingBeans = TransactionManager.class)
+    public TransactionManager axonTransactionManager() {
+        return NoTransactionManager.INSTANCE;
+    }
+            
     @Singleton
     public Configurer configurer() {
         Configurer configurer = DefaultConfigurer.defaultConfiguration(false);
         configurer.configureResourceInjector(c -> beanContext.getBean(ResourceInjector.class));
 
         registerAggregateBeanDefinitions(configurer);
-                
+        
+        configurer.registerComponent(ParameterResolverFactory.class, c -> 
+                beanContext.getBean(ParameterResolverFactory.class));
+
+        // TODO: Figure this out:
+//        RuntimeBeanReference handlerDefinition =
+//                SpringContextHandlerDefinitionBuilder.getBeanReference(registry);
+//        configurer.registerHandlerDefinition((c, clazz) -> beanFactory
+//                .getBean(handlerDefinition.getBeanName(), HandlerDefinition.class));
+
+        if (beanContext.containsBean(CommandBus.class)) {
+            configurer.configureCommandBus(c -> beanContext.getBean(CommandBus.class));
+        }
+        if (beanContext.containsBean(QueryBus.class)) {
+            configurer.configureQueryBus(c -> beanContext.getBean(QueryBus.class));
+        }
+        if (beanContext.containsBean(QueryUpdateEmitter.class)) {
+            configurer.configureQueryUpdateEmitter(c -> beanContext.getBean(QueryUpdateEmitter.class));
+        }
+        if (beanContext.containsBean(EventStorageEngine.class)) {
+            configurer.configureEmbeddedEventStore(c -> beanContext.getBean(EventStorageEngine.class));
+        }        
+        if (beanContext.containsBean(EventBus.class)) {
+            configurer.configureEventBus(c -> beanContext.getBean(EventBus.class));
+        }
+        if (beanContext.containsBean(Serializer.class)) {
+            configurer.configureSerializer(c -> beanContext.getBean(Serializer.class));
+        }
+        Qualifier<Serializer> eventSerializerQualifier = Qualifiers.byName("eventSerializer");
+        if (beanContext.containsBean(Serializer.class, eventSerializerQualifier)) {
+            configurer.configureEventSerializer(c -> beanContext.getBean(Serializer.class, eventSerializerQualifier));
+        }
+        Qualifier<Serializer> messageSerializerQualifier = Qualifiers.byName("messageSerializer");
+        if (beanContext.containsBean(Serializer.class, messageSerializerQualifier)) {
+            configurer.configureMessageSerializer(c -> beanContext.getBean(Serializer.class, messageSerializerQualifier));
+        }
+        if (beanContext.containsBean(TokenStore.class)) {
+            configurer.registerComponent(TokenStore.class, c -> beanContext.getBean(TokenStore.class));
+        }
         
         try {
             EventProcessingConfigurer eventProcessingConfigurer = configurer.eventProcessing();
@@ -118,7 +230,7 @@ public class AxonAutoConfigurer {
         }
     }
 
-    public void registerEventHandlerRegistrar() {
+    private void registerEventHandlerRegistrar() {
         List<BeanDefinition<?>> eventHandlerBeanDefinitions = beanContext
                 .getBeanDefinitions(Qualifiers.byStereotype(EventHandling.class))
                 .stream()
@@ -138,8 +250,8 @@ public class AxonAutoConfigurer {
 
             AnnotationValue<?> aggregateAnnotation = beanDefinition.getAnnotation(Aggregate.class);
             AggregateConfigurer<?> aggregateConf = AggregateConfigurer.defaultConfiguration(beanDefinition.getBeanType());
-            final String configuredRepositoryName = aggregateAnnotation.getRequiredValue("repository", String.class);
-            if (StringUtils.isEmpty(configuredRepositoryName)) {
+            final Optional<String> configuredRepositoryName = aggregateAnnotation.get("repository", String.class);
+            if (!configuredRepositoryName.isPresent()) {
                 String repositoryName = lcFirst(aggregateType.getSimpleName()) + "Repository";
                 final Qualifier<Repository> repositoryBeanQualifier = Qualifiers.byName(repositoryName);
                 if (beanContext.containsBean(Repository.class, repositoryBeanQualifier)) {
@@ -156,13 +268,13 @@ public class AxonAutoConfigurer {
                 }
             } else {
                 aggregateConf.configureRepository(
-                        c -> beanContext.getBean(Repository.class, Qualifiers.byName(configuredRepositoryName)));
+                        c -> beanContext.getBean(Repository.class, Qualifiers.byName(configuredRepositoryName.get())));
             }
 
-            String commandTargetResolverName = aggregateAnnotation.getRequiredValue("commandTargetResolver", String.class);
-            if (StringUtils.isNotEmpty(commandTargetResolverName)) {
+            Optional<String> commandTargetResolverName = aggregateAnnotation.get("commandTargetResolver", String.class);
+            if (commandTargetResolverName.isPresent()) {
                 aggregateConf.configureCommandTargetResolver(c
-                        -> beanContext.getBean(CommandTargetResolver.class, Qualifiers.byName(commandTargetResolverName)));
+                        -> beanContext.getBean(CommandTargetResolver.class, Qualifiers.byName(commandTargetResolverName.get())));
             } else if (beanContext.containsBean(CommandTargetResolver.class)) {
                 aggregateConf.configureCommandTargetResolver(c -> beanContext.getBean(CommandTargetResolver.class));
             }
