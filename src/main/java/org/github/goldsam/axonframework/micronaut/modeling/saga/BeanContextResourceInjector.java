@@ -8,11 +8,11 @@ import org.axonframework.modelling.saga.ResourceInjector;
  *
  */
 @Singleton
-public class MicronautResourceInjector implements ResourceInjector{
+public class BeanContextResourceInjector implements ResourceInjector{
 
     private final BeanContext beanContext; 
     
-    public MicronautResourceInjector(BeanContext beanContext) {
+    public BeanContextResourceInjector(BeanContext beanContext) {
         this.beanContext = beanContext;
     }
     
