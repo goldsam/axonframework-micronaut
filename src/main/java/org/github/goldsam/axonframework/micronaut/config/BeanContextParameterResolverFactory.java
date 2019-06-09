@@ -20,14 +20,14 @@ import org.axonframework.messaging.annotation.ParameterResolverFactory;
  *
  */
 @Slf4j
-public class BeanParameterResolverFactory implements ParameterResolverFactory {
+public class BeanContextParameterResolverFactory implements ParameterResolverFactory {
     
     private final BeanContext beanContext;
     
-    public BeanParameterResolverFactory(BeanContext beanContext) {
+    public BeanContextParameterResolverFactory(BeanContext beanContext) {
         this.beanContext = beanContext;
     }
-    
+
     @Override
     public ParameterResolver createInstance(Executable executable, Parameter[] parameters, int parameterIndex) {
         if (beanContext == null) {
@@ -49,7 +49,7 @@ public class BeanParameterResolverFactory implements ParameterResolverFactory {
             }
             return null;
         } else {
-            return new MicronautBeanParameterResolver(beansFound.iterator().next());
+            return new BeanContextParameterResolver(beansFound.iterator().next());
         }
     }
     
@@ -61,24 +61,24 @@ public class BeanParameterResolverFactory implements ParameterResolverFactory {
             for (BeanRegistration<?> registration : beansFound) {
                 AnnotationValue<Named> annotationValue = registration.getBeanDefinition().getAnnotation(Named.class);
                 if (annotationValue != null && Objects.equals(qualifierName, annotationValue.get("value", String.class))) {
-                    return Optional.of(new MicronautBeanParameterResolver(registration));
+                    return Optional.of(new BeanContextParameterResolver(registration));
                 }
             }
         }
         // find @Primary matching candidate
         for (BeanRegistration<?> registration : beansFound) {
             if (registration.getBeanDefinition().isPrimary()) {
-                return Optional.of(new MicronautBeanParameterResolver(registration));
+                return Optional.of(new BeanContextParameterResolver(registration));
             }
         }
         return Optional.empty();
     }
     
-    private static class MicronautBeanParameterResolver implements ParameterResolver<Object> {
+    private static class BeanContextParameterResolver implements ParameterResolver<Object> {
 
         private final BeanRegistration<?> beanRegistration;
                 
-        public MicronautBeanParameterResolver(BeanRegistration<?> beanRegistration) {
+        public BeanContextParameterResolver(BeanRegistration<?> beanRegistration) {
             this.beanRegistration = beanRegistration;
         }
         
