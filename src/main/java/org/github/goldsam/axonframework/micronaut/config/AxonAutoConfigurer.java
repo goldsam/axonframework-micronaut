@@ -34,6 +34,7 @@ import org.axonframework.eventhandling.EventBus;
 import org.axonframework.eventhandling.SimpleEventBus;
 import org.axonframework.eventhandling.tokenstore.TokenStore;
 import org.axonframework.eventsourcing.AggregateFactory;
+import org.axonframework.eventsourcing.SnapshotTriggerDefinition;
 import org.axonframework.eventsourcing.eventstore.EmbeddedEventStore;
 import org.axonframework.eventsourcing.eventstore.EventStorageEngine;
 import org.axonframework.eventsourcing.eventstore.EventStore;
@@ -133,12 +134,6 @@ public class AxonAutoConfigurer {
                 .storageEngine(storageEngine)
                 .messageMonitor(configuration.messageMonitor(EventStore.class, "eventStore"))
                 .build();
-    }
-
-    @Singleton
-    @Requires(missingBeans = ParameterResolverFactory.class)
-    public ParameterResolverFactory defaultParameterResolverFactory() {
-        return new BeanParameterResolverFactory(beanContext);
     }
     
     @Singleton
@@ -260,11 +255,17 @@ public class AxonAutoConfigurer {
                     String aggregateFactoryName = lcFirst(beanDefinition.getName()) + "AggregateFactory";
                     Qualifier<AggregateFactory> aggregateFactoryQualifier = Qualifiers.byName(aggregateFactoryName);
                     repositoryRegistrations.put(repositoryBeanQualifier, aggregateConf);
-                    if (beanContext.containsBean(AggregateFactory.class, aggregateFactoryQualifier)) {
+                    if (!beanContext.containsBean(AggregateFactory.class, aggregateFactoryQualifier)) {
                         beanContext.registerSingleton(AggregateFactory.class, new PrototypeBeanAggregateFactory<>(aggregateType), aggregateFactoryQualifier, true);
                     }
 
                     aggregateConf.configureAggregateFactory(c -> beanContext.getBean(AggregateFactory.class, aggregateFactoryQualifier));
+                    
+                    final Optional<String> configuredSnapshotTriggerDefinition = 
+                            aggregateAnnotation.get("snapshotTriggerDefinition", String.class);
+                    configuredSnapshotTriggerDefinition.ifPresent(std ->
+                            aggregateConf.configureSnapshotTrigger(c ->
+                                    beanContext.getBean(SnapshotTriggerDefinition.class, Qualifiers.byName(std))));
                 }
             } else {
                 aggregateConf.configureRepository(
